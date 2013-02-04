@@ -6,31 +6,31 @@ import unittest
 class TestRenjuGame(unittest.TestCase):
 
     def setUp(self):
-        self.game = RenjuGame()
+        self.board = RenjuBoard()
         self.stoneBuilder = StoneBuilder()
 
     def test5StonesWin(self):
         stones = self.stoneBuilder.stone(white).From((0, 0)).toEast().count(4).get();
-        self.game.places(stones)
+        self.board.places(stones)
         expectedPlace = self.stoneBuilder.count(1).get()[0][1]
-        self.assertTrue(self.game.willWinWith(expectedPlace, white))
+        self.assertTrue(self.board.willWinWith(expectedPlace, white))
         
     def test4DoesNot(self):
         stones = self.stoneBuilder.stone(white).From((0, 0)).toEast().count(3).get();
-        self.game.places(stones)
+        self.board.places(stones)
         expectedPlace = self.stoneBuilder.count(1).get()[0][1]
-        self.assertFalse(self.game.willWinWith(expectedPlace, white))
+        self.assertFalse(self.board.willWinWith(expectedPlace, white))
         
     def testFalseWinningWithOthersStone(self):
         stones = self.stoneBuilder.From((0, 0)).toEast().stone(white).count(3).stone(black).count(1).get();
-        self.game.places(stones)
+        self.board.places(stones)
         expectedPlace = self.stoneBuilder.count(1).get()[0][1]
-        self.assertFalse(self.game.willWinWith(expectedPlace, white))
+        self.assertFalse(self.board.willWinWith(expectedPlace, white))
         
     def testWinningOnOtherDirection(self):
         def checkWinningOnDirection(directionIndex, self=self):
             stoneBuilder = StoneBuilder()
-            game = RenjuGame(11)
+            game = RenjuBoard(11)
             stones = stoneBuilder.From((5, 5)).to(directionIndex).stone(black).count(1).stone(white).count(4).get()
             game.places(stones)
             expectedPlace = stoneBuilder.count(1).get()[0][1]
@@ -39,9 +39,9 @@ class TestRenjuGame(unittest.TestCase):
 
     def testWinningInTheMiddle(self):
         stones = self.stoneBuilder.stone(black).From((0, 0)).toEast().count(3).skip(1).count(1).get();
-        self.game.places(stones)
+        self.board.places(stones)
         expectedPlace = (3, 0)
-        self.assertTrue(self.game.willWinWith(expectedPlace, black))
+        self.assertTrue(self.board.willWinWith(expectedPlace, black))
 
 
 if __name__ == "__main__":

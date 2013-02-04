@@ -5,10 +5,12 @@ class Player:
 
 black = Player("black")
 white = Player("white")
+empty = Player("empty")
+
 black.oppose = white
 white.oppose = black
 
-class RenjuGame:
+class RenjuBoard:
     
     dirs = ((-1,0), (0,-1), (-1,-1), (1,-1))
     

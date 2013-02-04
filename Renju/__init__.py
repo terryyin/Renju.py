@@ -3,14 +3,14 @@ NameOfTheGame = "Renju"
 from Tkinter import *
 import Tkinter
 from AIRenjuPlayer import AIRenjuPlayer
-from RenjuGame import RenjuGame, black, white
+from RenjuGame import RenjuBoard, black, white
 
 class RenjuGameTkWindow():
     PADDING = 2
     BORDER = 10
     LINE_THICKNESS = 1
     def __init__(self, root, game):
-        self.game = game
+        self.board = game
         self.aiPlayer = AIRenjuPlayer(black)
         root.title(NameOfTheGame)
         Label(root, text='Welcome To The Renju Game!').pack(pady=10)
@@ -18,7 +18,7 @@ class RenjuGameTkWindow():
         self.canvas.pack()
         width = int(self.canvas["width"])
         height = int(self.canvas["height"])
-        self.GRID_SIZE = ([width, height][width > height] - self.BORDER * 2) / (game.groundSize + 1)
+        self.GRID_SIZE = ([width, height][width > height] - self.BORDER * 2) / (game.groundSize)
         self._drawGround()
         def handler(event, self=self):
             return self.__onClick(event)
@@ -26,22 +26,22 @@ class RenjuGameTkWindow():
         self.aiMove()
         
     def _drawGround(self):
-        for i in range(0, self.game.groundSize + 2):
+        for i in range(0, self.board.groundSize):
             self.canvas.create_line(
-                               self.BORDER,
-                               self.BORDER + self.GRID_SIZE * i,
-                               self.BORDER + self.GRID_SIZE * (self.game.groundSize + 1),
-                               self.BORDER + self.GRID_SIZE * i,
+                               self.GRID_SIZE/2 + self.BORDER,
+                               self.GRID_SIZE/2 + self.BORDER + self.GRID_SIZE * i,
+                               self.GRID_SIZE/2 + self.BORDER + self.GRID_SIZE * (self.board.groundSize-1),
+                               self.GRID_SIZE/2 + self.BORDER + self.GRID_SIZE * i,
                                width=self.LINE_THICKNESS)
             self.canvas.create_line(
-                               self.BORDER + self.GRID_SIZE * i,
-                               self.BORDER,
-                               self.BORDER + self.GRID_SIZE * i,
-                               self.BORDER + self.GRID_SIZE * (self.game.groundSize + 1),
+                               self.GRID_SIZE/2 + self.BORDER + self.GRID_SIZE * i,
+                               self.GRID_SIZE/2 + self.BORDER,
+                               self.GRID_SIZE/2 + self.BORDER + self.GRID_SIZE * i,
+                               self.GRID_SIZE/2 + self.BORDER + self.GRID_SIZE * (self.board.groundSize - 1),
                                width=self.LINE_THICKNESS)
         
     def aiMove(self):
-        move = self.aiPlayer.getMyMove(self.game)
+        move = self.aiPlayer.getMyMove(self.board)
         self._placeStone(move, black)
     
     def __onClick(self, event):
@@ -50,7 +50,7 @@ class RenjuGameTkWindow():
         self.aiMove()
     
     def _placeStone(self, position, who):
-        self.game.place(who, position)
+        self.board.place(who, position)
         if who:
             self.__drawStone(position, who)
         
@@ -59,14 +59,14 @@ class RenjuGameTkWindow():
         self.canvas.create_oval(xy[0], xy[1], xy[0] + self.GRID_SIZE, xy[1] + self.GRID_SIZE, fill=who.color)
     
     def _getPosition(self, x, y):
-        toGround = lambda x: (x - self.BORDER - self.GRID_SIZE / 2) / self.GRID_SIZE
+        toGround = lambda x: (x - self.BORDER) / self.GRID_SIZE
         return (toGround(x), toGround(y))
     
     def _getCoordination(self, position):
-        toAxis = lambda x: self.GRID_SIZE * x + self.BORDER + self.GRID_SIZE / 2
+        toAxis = lambda x: self.GRID_SIZE * x + self.BORDER
         return (toAxis(position[0]), toAxis(position[1]))
     
 if __name__ == "__main__":
     root = Tk()
-    window = RenjuGameTkWindow(root, RenjuGame())
+    window = RenjuGameTkWindow(root, RenjuBoard())
     root.mainloop()
