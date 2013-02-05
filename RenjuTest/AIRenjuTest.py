@@ -2,8 +2,18 @@ import unittest
 from Renju import *
 from StoneBuilder import StoneBuilder, stop, stos
 
-class TestAIPlayerPattern(unittest.TestCase):
+'''
+"B8\__XO_$" means:
+    B: column B (column 1).
+    8: row 8.
+    \: to direction south east
+    _: empty
+    X: black stone
+    O: white stone
+    $: wall. It's not a stone but something else prevent AI to match a pattern.
+'''
 
+class TestAIPlayerPattern(unittest.TestCase):
     def setUp(self):
         self.FourInARowPattern = {
             '|****': 100,
@@ -34,8 +44,6 @@ class TestAIPlayerPattern(unittest.TestCase):
         board.places(stos('G0|_XXX_'))
         move = player.getMyMove(board)
         self.assertEqual(move, stop('C0|____O'))
-
-
 
 class TestAIPlayer(unittest.TestCase):
 
