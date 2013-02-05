@@ -17,7 +17,7 @@ class Move:
         return self.rank_ - other.rank_
 
 now = 8
-toAI = {black:'*', white:'@', empty:'_', now:'|'}
+toAI = {black:'*', white:'@', empty:'_', now:'|', 'wall':'W'}
 class AIBoard:
     dirs = ((-1, 0), (0, -1), (-1, -1), (1, -1), (1, 0), (0, 1), (1, 1), (-1, 1))
     
@@ -29,7 +29,7 @@ class AIBoard:
     def getSlice(self, move):
         for start in range(-2, 1):
             for (dx, dy) in self.dirs:
-                for length in range(5, 7):
+                for length in range(5, 8):
                     s = [self.getStone_((move[0] + i * dx, move[1] + i * dy)) for i in range(start, start + length)]
                     s[-start] = '|'
                     yield ''.join(s)
@@ -37,10 +37,20 @@ class AIBoard:
         if pos[0]<0 or pos[0] >= self.size or pos[1] < 0 or pos[1] > self.size:
             return '|'
         return toAI[self.board.stones.get(pos, empty)]
-        
-            
+
+MIN_RANK = 1  
 LOSS = 100
 stonePatterns = {
+            '_*|___': MIN_RANK, 
+            '__|*__': MIN_RANK * 2, 
+            '_@|___': MIN_RANK * 3, 
+            '__|@__': MIN_RANK * 4, 
+            
+            '_|**__': MIN_RANK * 5, 
+            '_*|*__': MIN_RANK * 5, 
+            '_|@@__': MIN_RANK * 6, 
+            '_@|@__': MIN_RANK * 6, 
+
             '_|***_': LOSS - 15, 
             '_*|**_': LOSS - 15, 
             '_|@@@_': LOSS - 10, 

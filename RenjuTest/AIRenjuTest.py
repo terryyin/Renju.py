@@ -16,24 +16,24 @@ class TestAIPlayerPattern(unittest.TestCase):
     def testAIPlayerShouldGiveThePatternRank(self):
         player = AIRenjuPlayer(white, self.FourInARowPattern)
         board = RenjuBoard()
-        board.places(stos('XXXX_'))
+        board.places(stos('A0|XXXX_'))
         move = player.getMyMove(board)
-        self.assertEqual(move, stop('____O'))
+        self.assertEqual(move, stop('A0|____O'))
 
     def testAIPlayerShouldWorkWithBlackStoneAsWell(self):
         player = AIRenjuPlayer(black, self.FourInARowPattern)
         board = RenjuBoard()
-        board.places(stos('OOOO_'))
+        board.places(stos('A0|OOOO_'))
         move = player.getMyMove(board)
-        self.assertEqual(move, stop('____O'))
+        self.assertEqual(move, stop('A0|____O'))
 
     def testAIPlayerShouldChooseTheMoveWithHighestRank(self):
         player = AIRenjuPlayer(white, dict(self.FourInARowPattern.items() + self.ThreeInARowPattern.items()))
         board = RenjuBoard()
-        board.places(stos('XXXX_', 8))
-        board.places(stos('_XXX_', 3))
+        board.places(stos('C0|XXXX_'))
+        board.places(stos('G0|_XXX_'))
         move = player.getMyMove(board)
-        self.assertEqual(move, stop('____O', 8))
+        self.assertEqual(move, stop('C0|____O'))
 
 
 
@@ -54,33 +54,48 @@ class TestAIPlayer(unittest.TestCase):
         move = self.player.getMyMove(game)
         self.assertEquals((1, 0), move)
 
-    def aiMoveForPatternShouldBeIn(self, stones, lowRankStones, expects):
+    def aiMoveForPatternShouldBeIn(self, stones, expects):
         board = RenjuBoard()
-        board.places(stos(stones))
-        self.board.places(stos(lowRankStones, 3))
+        for s in stones:
+            board.places(stos(s))
         move = self.player.getMyMove(board)
         self.assertIn(move, [stop(e) for e in expects])
 
     def testAIPlayerWantsToWin(self):
-        self.aiMoveForPatternShouldBeIn("OOOO_", "XXXX_", ["____O"])
-        self.aiMoveForPatternShouldBeIn("OOO_O", "XXXX_", ["___O"])
-        self.aiMoveForPatternShouldBeIn("OO_OO", "XXXX_", ["__O"])
+        self.aiMoveForPatternShouldBeIn(["A9-OOOO_", "A3-XXXX_"], ["A9-____O"])
+        self.aiMoveForPatternShouldBeIn(["A9-OOO_O", "A3-XXXX_"], ["A9-___O"])
+        self.aiMoveForPatternShouldBeIn(["A9-OO_OO", "A3-XXXX_"], ["A9-__O"])
 
     def testAIPlayerDoesNotWantOtherToWin(self):
-        self.aiMoveForPatternShouldBeIn("XXXX_", "_OOO_", ["____O"])
-        self.aiMoveForPatternShouldBeIn("X_XXX", "_OOO_", ["_O"])
-        self.aiMoveForPatternShouldBeIn("XX_XX", "_OOO_", ["__O"])
+        self.aiMoveForPatternShouldBeIn(["A9-XXXX_", "A3-_OOO_"], ["A9-____O"])
+        self.aiMoveForPatternShouldBeIn(["A9-X_XXX", "A3-_OOO_"], ["A9-_O"])
+        self.aiMoveForPatternShouldBeIn(["A9-XX_XX", "A3-_OOO_"], ["A9-__O"])
 
     def testAIPlayerShouldForm4InARowWhenPossible(self):
-        self.aiMoveForPatternShouldBeIn("_OOO__X", "_XXX_", ["____O"])
-        self.aiMoveForPatternShouldBeIn("_O_OO_X", "_XXX_", ["__O"])
-        self.aiMoveForPatternShouldBeIn("_OO_O_X", "_XXX_", ["___O"])
+        self.aiMoveForPatternShouldBeIn(["A9-_OOO__$", "A3-_XXX__$"], ["A9-____O"])
+        self.aiMoveForPatternShouldBeIn(["A9-_O_OO_$", "A3-_XXX__$"], ["A9-__O"])
+        self.aiMoveForPatternShouldBeIn(["A9-_OO_O_$", "A3-_XXX__$"], ["A9-___O"])
 
     def testAIPlayerShouldStopOppose3InARow(self):
-        self.aiMoveForPatternShouldBeIn("_XXX__O", "", ["____O"])
-        self.aiMoveForPatternShouldBeIn("_X_XX_O", "", ["__O"])
-        self.aiMoveForPatternShouldBeIn("_XX_X_O", "", ["___O"])
+        self.aiMoveForPatternShouldBeIn(["A9-_XXX__$"], ["A9-____O"])
+        self.aiMoveForPatternShouldBeIn(["A9-_X_XX_$"], ["A9-__O"])
+        self.aiMoveForPatternShouldBeIn(["A9-_XX_X_$"], ["A9-___O"])
 
+    def testTwoStoneWith6Slots(self):
+        self.aiMoveForPatternShouldBeIn(["A0-__OO__$", "A0|__XX__$"], ["A0-_O", "A0-____O"])
+        self.aiMoveForPatternShouldBeIn(["A0-_O_O__$", "A0|__XX__$"], ["A0-__O"])
+
+    def testOpposeTwoStoneWith6Slots(self):
+        self.aiMoveForPatternShouldBeIn(["A0-__XX__$", "A0|__O___$"], ["A0-_O", "A0-____O"])
+        self.aiMoveForPatternShouldBeIn(["A0-_X_X__$", "A0|__O___$"], ["A0-__O"])
+
+    def testOneStoneWith6Slots(self):
+        self.aiMoveForPatternShouldBeIn(["A0-__O___$", "A0|_O____$"], ["A0-___O"])
+        self.aiMoveForPatternShouldBeIn(["A0|_O____$", "B0-__X___$"], ["A0|__O"])
+
+    def testOpposeWithOneStoneWith6Slots(self):
+        self.aiMoveForPatternShouldBeIn(["A0-__X___$", "A0|_X____$"], ["A0-___O"])
+        self.aiMoveForPatternShouldBeIn(["A0|_X____$"], ["A0|__O"])
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

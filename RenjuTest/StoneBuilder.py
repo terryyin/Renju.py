@@ -24,6 +24,21 @@ class StoneBuilder:
         self.dy = 0
         return self
     
+    def toSouth(self):
+        self.dx = 0
+        self.dy = 1
+        return self
+    
+    def toSouthEast(self):
+        self.dx = 1
+        self.dy = 1
+        return self
+    
+    def toSouthWest(self):
+        self.dx = -1
+        self.dy = 1
+        return self
+    
     def to(self, directionIndex):
         self.dx = self.dirs[directionIndex][0]
         self.dy = self.dirs[directionIndex][1]
@@ -47,20 +62,27 @@ class StoneBuilder:
         return self.get()[0][1]
     
 class OneRowPattern:
-    def __init__(self, patternString, row):
-        builder = StoneBuilder().toEast().From((0, row))
+    def __init__(self, patternString):
+        builder = StoneBuilder().From((ord(patternString[0]) - ord('A'), ord(patternString[1]) - ord('0')))
+        {
+         '-':StoneBuilder.toEast,
+         '|':StoneBuilder.toSouth,
+         '\\':StoneBuilder.toSouthEast,
+         '/':StoneBuilder.toSouthWest,
+         }[patternString[2]](builder)
         toStone = {
                    '_' : lambda:builder.skip(1),
                    'O' : lambda:builder.stone(white).count(1),
-                   'X' : lambda:builder.stone(black).count(1)
+                   'X' : lambda:builder.stone(black).count(1),
+                   '$' : lambda:builder.stone("wall").count(1)
                    }
-        map(lambda c: toStone[c](), patternString)
+        map(lambda c: toStone[c](), patternString[3:])
         self.stones = builder.get()
     def getOnePosition(self):
         return self.stones[0][1]
     
-def stos(patternString, row = 10):
-    return OneRowPattern(patternString, row).stones
+def stos(patternString):
+    return OneRowPattern(patternString).stones
 
-def stop(patternString, row = 10):
-    return OneRowPattern(patternString, row).getOnePosition()
+def stop(patternString):
+    return OneRowPattern(patternString).getOnePosition()
