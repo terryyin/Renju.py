@@ -11,7 +11,6 @@ class RenjuGameTkWindow():
     LINE_THICKNESS = 1
     def __init__(self, root, game):
         self.board = game
-        self.aiPlayer = AIRenjuPlayer(black)
         root.title(NameOfTheGame)
         Label(root, text='Welcome To The Renju Game!').pack(pady=10)
         self.canvas = Tkinter.Canvas(root, height=600, width=600)
@@ -41,7 +40,8 @@ class RenjuGameTkWindow():
                                width=self.LINE_THICKNESS)
         
     def aiMove(self):
-        move = self.aiPlayer.getMyMove(self.board)
+        self.aiPlayer = AIRenjuPlayer(black, self.board)
+        move = self.aiPlayer.getMyMove()
         self._placeStone(move, black)
     
     def __onClick(self, event):
@@ -65,7 +65,7 @@ class RenjuGameTkWindow():
     def _getCoordination(self, position):
         toAxis = lambda x: self.GRID_SIZE * x + self.BORDER
         return (toAxis(position[0]), toAxis(position[1]))
-    
+
 if __name__ == "__main__":
     root = Tk()
     window = RenjuGameTkWindow(root, RenjuBoard())

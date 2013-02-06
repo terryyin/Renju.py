@@ -24,7 +24,7 @@ class RenjuBoard:
         return self
     
     def places(self, stones):
-        for (who, pos) in stones:
+        for (pos, who) in stones:
             self.place(who, pos)
     
     def willWinWith(self, move, who):

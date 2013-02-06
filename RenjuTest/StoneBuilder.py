@@ -4,6 +4,7 @@ class StoneBuilder:
     def __init__(self):
         self.origin = (0, 0)
         self.stones = []
+        self.expects = []
         self.currentIndex = 0
         
     def From(self, position):
@@ -50,16 +51,18 @@ class StoneBuilder:
     
     def count(self, n):
         for i in range(self.currentIndex, self.currentIndex + n):
-            self.stones.append((self.who, (self.origin[0] + self.dx * i, self.origin[1] + self.dy * i)))
+            self.stones.append(((self.origin[0] + self.dx * i, self.origin[1] + self.dy * i), self.who))
         self.currentIndex += n
         return self
-    
+    def expectOne(self):
+        self.expects.append((self.origin[0] + self.dx * self.currentIndex, self.origin[1] + self.dy * self.currentIndex))
+        self.currentIndex += 1
     def get(self):
         stones = self.stones
         self.stones = []
         return stones
     def getLastPosition(self):
-        return self.get()[0][1]
+        return self.get()[0][0]
     
 class OneRowPattern:
     def __init__(self, patternString):
@@ -70,19 +73,38 @@ class OneRowPattern:
          '\\':StoneBuilder.toSouthEast,
          '/':StoneBuilder.toSouthWest,
          }[patternString[2]](builder)
+         
         toStone = {
                    '_' : lambda:builder.skip(1),
+                   ' ' : lambda:builder.skip(1),
                    'O' : lambda:builder.stone(white).count(1),
                    'X' : lambda:builder.stone(black).count(1),
-                   '$' : lambda:builder.stone("wall").count(1)
+                   '$' : lambda:builder.stone("wall").count(1),
+                   '?' : lambda:builder.expectOne()
                    }
         map(lambda c: toStone[c](), patternString[3:])
         self.stones = builder.get()
+        self.expects = builder.expects
     def getOnePosition(self):
-        return self.stones[0][1]
+        return self.stones[0][0]
+
+class MultipleRowPattern:
+    def __init__(self, patternString):
+        self.stones =[]
+        self.expects = []
+        c = ord('0')
+        for p in patternString.splitlines()[1:]:
+            oneRow = OneRowPattern('A'+chr(c)+"-" + p.strip()[1:])
+            self.stones.extend(oneRow.stones)
+            self.expects.extend(oneRow.expects)
+            c+=1
     
-def stos(patternString):
-    return OneRowPattern(patternString).stones
+def parseStonePatternString(patternString):
+    if patternString.startswith(' '):
+        parsed = MultipleRowPattern(patternString)
+    else:
+        parsed = OneRowPattern(patternString)
+    return parsed.stones, parsed.expects
 
 def stop(patternString):
     return OneRowPattern(patternString).getOnePosition()
