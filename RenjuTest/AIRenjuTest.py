@@ -22,6 +22,9 @@ class TestAIPlayerPattern(unittest.TestCase):
         self.ThreeInARowPattern = {
             '|***__': 60,
             }
+        self.OneStonePattern = {
+            '|*____': 60,
+            }
 
     def testAIPlayerShouldGiveThePatternRank(self):
         player = AIRenjuPlayer(white,  RenjuBoard(), self.FourInARowPattern)
@@ -80,11 +83,11 @@ class TestAIPlayer(unittest.TestCase):
         move = self.player.getMyMove()
         self.assertIn(move, [stop(e) for e in expects])
 
-    def aiPattern(self, stonesPattern):
+    def aiPattern(self, stonesPattern, level = 0):
         self.player = AIRenjuPlayer(white, RenjuBoard())
         stones, expects = parseStonePatternString(stonesPattern)
         self.player.placeStones(stones)
-        move = self.player.getMyMove()
+        move = self.player.getMyMove(level)
         self.assertIn(move, expects)
 
     def testAIPlayerWantsToWin(self):
@@ -147,6 +150,30 @@ class TestAIPlayer(unittest.TestCase):
                              6      XXX
                              7         
                         ''')
+
+    def test2LevelsStopAtLosing(self):
+        self.aiPattern('''    0123456789
+                             0XXXX?
+                             0   OOO
+                        ''', 1)
+
+    def test2LevelsStopAtWinning(self):
+        self.aiPattern('''    0123456789
+                             0OOOO?
+                             0XXXX
+                        ''', 1)
+
+    def test2LevelsTake3inARow(self):
+        self.aiPattern('''    0123456789
+                             0     ?OOO?
+                             0      XXX
+                        ''', 1)
+
+    def test2LevelsSave3inARow(self):
+        self.aiPattern('''    0123456789
+                             0     ?XXX?
+                        ''', 1)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

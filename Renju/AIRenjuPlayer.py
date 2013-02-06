@@ -4,10 +4,11 @@ from RenjuGame import black, white, empty
 
 MIN_RANK = 2  
 URGENT = 300
+WINNING = 600
 LOSS = 1000
 WIN = 2000
 stonePatterns = {
-            '_*_|__': MIN_RANK, 
+            '__|_*_': MIN_RANK, 
             '_*|___': MIN_RANK + 1, 
             '__|*__': MIN_RANK + 2, 
             '_@|___': MIN_RANK + 3, 
@@ -18,10 +19,10 @@ stonePatterns = {
             '_|@@__': MIN_RANK + 6, 
             '_@|@__': MIN_RANK + 6, 
 
-            '_|***_': URGENT - 100, 
-            '_*|**_': URGENT - 100, 
-            '_|@@@_': URGENT, 
-            '_@|@@_': URGENT, 
+            '_|***_': URGENT, 
+            '_*|**_': URGENT, 
+            '_|@@@_': WINNING, 
+            '_@|@@_': WINNING, 
             '*|****': LOSS,
             '_*|***': LOSS,
             '@*|***': LOSS,
@@ -63,7 +64,7 @@ toAI = {black:'*', white:'@', empty:'_', '_':'_', 'wall':'W', '|':'|'}
 class AICross:
     def __init__(self):
         self.stone_ = '_'
-        self.rank_ = 0
+        self.rank_ = [0, 0]
         self.ripples_ = []
         
     def getRippleSlices(self):
@@ -79,8 +80,8 @@ origin.stone_ = '|'
 class AIBoard:
     dirs = ((-1, 0), (0, -1), (-1, -1), (1, -1), (1, 0), (0, 1), (1, 1), (-1, 1))
     
-    def __init__(self, boardSize, patterns):
-        self.patterns = patterns
+    def __init__(self, boardSize, patterns, blackPatterns):
+        self.patterns = [patterns, blackPatterns]
         self.crosses = {}
         for pos in product(range(boardSize), repeat=2):
             self.crosses[pos] = AICross()
@@ -114,10 +115,12 @@ class AIBoard:
     def placeStone(self, pos, stone):
         cross = self.crosses[pos]
         for c, aslice in cross.getRippleSlices():
-            c.rank_ -= self.patterns.get(aslice, 0)
+            c.rank_[0] -= self.patterns[0].get(aslice, 0)
+            c.rank_[1] -= self.patterns[1].get(aslice, 0)
         self.crosses[pos].placeStone(stone)
         for c, aslice in cross.getRippleSlices():
-            c.rank_ += self.patterns.get(aslice, 0)
+            c.rank_[0] += self.patterns[0].get(aslice, 0)
+            c.rank_[1] += self.patterns[1].get(aslice, 0)
 
 def blackCopyOfPattern(pattern):
     op = {}
@@ -129,11 +132,7 @@ class AIRenjuPlayer(object):
     
     def __init__(self, who, board, patternsForWhite = stonePatterns):
         self.who = who
-        if who == white:
-            patterns = patternsForWhite
-        else:
-            patterns = blackCopyOfPattern(patternsForWhite)
-        self.aiBoard = AIBoard(board.groundSize, patterns)
+        self.aiBoard = AIBoard(board.groundSize, patternsForWhite, blackCopyOfPattern(patternsForWhite))
         self.aiBoard.placeStones(board.stones.items())
             
     def placeStone(self, pos, stone):
@@ -142,9 +141,32 @@ class AIRenjuPlayer(object):
     def placeStones(self, stones):
         self.aiBoard.placeStones(stones)
         
-    def getMyMove(self):
-        evaluateMove = lambda x:Move(x, self.aiBoard.crosses[x].rank_)
-        return max(map(evaluateMove, self._possibleMoves())).getPosition()
+    def getMyMove(self, level = 0):
+        return self.getMyMove_(level, self.who).getPosition()
+    def getMyMove_(self, level, who):
+        evaluateMove = lambda x:Move(x, self.aiBoard.crosses[x].rank_[who == black])
+        if level == 0:
+            alpha = max(map(evaluateMove, self._possibleMoves()))
+        else:
+            possibleMoves = sorted(map(evaluateMove, self._possibleMoves()), reverse = True)
+            alpha = possibleMoves[0]
+            alpha.rank_ = WIN * 10
+            for move in possibleMoves:
+                pos = move.pos
+                if self.aiBoard.crosses[pos].rank_[who == black] >= WINNING:
+                    alpha = Move(pos, self.aiBoard.crosses[pos].rank_[who == black])
+                    break
+                self.aiBoard.placeStone(pos, who)
+                beta = self.getMyMove_(level - 1, who.oppose)
+                if alpha.rank_ > beta.rank_:
+                    alpha.rank_ = beta.rank_
+                    alpha.pos = pos
+                self.aiBoard.placeStone(pos, '_')
+        if alpha.rank_ >= WINNING:
+            alpha.rank_ = WIN
+        else:
+            alpha.rank_ = 0
+        return alpha
     
     def _possibleMoves(self):
         for pos, cross in self.aiBoard.crosses.items():
