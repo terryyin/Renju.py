@@ -41,7 +41,7 @@ class RenjuGameTkWindow():
         
     def aiMove(self):
         self.aiPlayer = AIRenjuPlayer(black, self.board)
-        move = self.aiPlayer.getMyMove(1)
+        move = self.aiPlayer.getMyMove(3)
         self._placeStone(move, black)
     
     def __onClick(self, event):

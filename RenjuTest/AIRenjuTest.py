@@ -1,5 +1,6 @@
 import unittest
 from Renju import *
+from Renju.AIRenjuPlayer import WIN
 from StoneBuilder import StoneBuilder, stop, parseStonePatternString
 
 '''
@@ -110,9 +111,16 @@ class TestAIPlayer(unittest.TestCase):
         self.aiMoveForPatternShouldBeIn(["A9-_X_XX_$"], ["A9-__O"])
         self.aiMoveForPatternShouldBeIn(["A9-_XX_X_$"], ["A9-___O"])
 
+    def testThreatingShouldHavePriority(self):
+        self.aiMoveForPatternShouldBeIn(["A0-OOO___$", "A0|__OO__$"], ["A0-___O", "A0-____O"])
+        self.aiMoveForPatternShouldBeIn(["A0-OOO___OO"], ["A0-____O"])
+        self.aiMoveForPatternShouldBeIn(["A0-OOO__$__OO"], ["A0-___O", "A0-____O"])
+        self.aiMoveForPatternShouldBeIn(["A0-OOO__O___OO"], ["A0-___O", "A0-____O"])
+        self.aiMoveForPatternShouldBeIn(["A0-OOO__X___OO"], ["A0-___O", "A0-____O"])
+
     def testTwoStoneWith6Slots(self):
         self.aiMoveForPatternShouldBeIn(["A0-__OO__$", "A0|__XX__$"], ["A0-_O", "A0-____O"])
-        self.aiMoveForPatternShouldBeIn(["A0-_O_O__$", "A0|__XX__$"], ["A0-__O"])
+        self.aiMoveForPatternShouldBeIn(["A0-__O_O__$", "A0|__XX__$"], ["A0-___O"])
 
     def testOpposeTwoStoneWith6Slots(self):
         self.aiMoveForPatternShouldBeIn(["A0-__XX__$", "A0|__O___$"], ["A0-_O", "A0-____O"])
@@ -125,6 +133,53 @@ class TestAIPlayer(unittest.TestCase):
     def testOpposeWithOneStoneWith6Slots(self):
         self.aiMoveForPatternShouldBeIn(["A0-__X___$", "A0|_X____$"], ["A0-___O"])
         self.aiMoveForPatternShouldBeIn(["A0|_X____$"], ["A0|__O"])
+
+    def testWinningWithADouble3(self):
+        self.aiPattern('''    0123456789
+                             |
+                             |
+                             |     OO?
+                             |       O
+                             |       O
+                             |
+                             |
+                        ''')
+
+    def testShouldAvoidFurtherLose(self):
+        self.aiPattern('''    0123456789
+                             |
+                             |
+                             |     XX?
+                             |       X
+                             |       X
+                             |
+                             |
+                        ''')
+
+    def testTwo3IsTheSameAs3OpenOnBothEndOppose(self):
+        self.aiPattern('''    0123456789
+                             |
+                             |
+                             |   $XXX?
+                             |       X
+                             |       X
+                             |       X
+                             |       $
+                             |      XXX
+                        ''')
+
+    def XtestTwo3IsTheSameAs3OpenOnBothEnd(self):
+        self.aiPattern('''    0123456789
+                             |
+                             |
+                             |   $OOO?
+                             |       O
+                             |       O
+                             |       O
+                             |       $
+                             |      OOO
+                        ''')
+
 
     def testTryToBlockOpposeOneStone1(self):
         self.aiPattern('''    ABCDEFGHIJKL
@@ -173,6 +228,76 @@ class TestAIPlayer(unittest.TestCase):
         self.aiPattern('''    0123456789
                              0     ?XXX?
                         ''', 1)
+
+    def test3Levels(self):
+        self.aiPattern('''    0123456789
+                             0     ?XX?
+                        ''', 2)
+
+class TestAIPlayerMaxmin(unittest.TestCase):
+    def aiMaxmin(self, stonesPattern, who, asWho, level, expectedRank):
+        player = AIRenjuPlayer(who, RenjuBoard())
+        stones, expects = parseStonePatternString(stonesPattern)
+        player.placeStones(stones)
+        move = player.getMyMove_(level, asWho)
+        self.assertIn(move.pos, expects)
+        self.assertEqual(expectedRank, move.rank_)
+        
+    def test0LevelsShouldSeeTheDirectWinning(self):
+        self.aiMaxmin('''     0123456789
+                             |OOOO?
+                             |XXXX
+                        ''', white, white, 0, WIN)
+
+    def test0LevelsShouldSeeTheIndirectWinning(self):
+        self.aiMaxmin('''     0123456789
+                             |   ?OOO?
+                        ''', white, white, 0, WIN)
+
+    def test0LevelsShouldSeeTheIndirectWinningButNotFalsePositive(self):
+        self.aiMaxmin('''     0123456789
+                             |   OOO
+                             |XXXX?
+                        ''', white, white, 0, WIN)
+
+    def test0LevelTooManyLosingPoints(self):
+        self.aiMaxmin('''     0123456789
+                             |?XXXX?
+                        ''', white, white, 0, -WIN)
+
+    def test0LevelsShouldSeeTheLosing(self):
+        self.aiMaxmin('''     0123456789
+                             |
+                             |       ?
+                             |    ?XXX?
+                             |       X
+                             |       X
+                             |       ?
+                             |
+                        ''', white, white, 0, -WIN)
+
+    def test0LevelsShouldPostponeTheLosing(self):
+        self.aiMaxmin('''     0123456789
+                             |
+                             |       ?OOO$
+                             |     XXX
+                             |       X
+                             |       X
+                             |       
+                             |
+                        ''', white, white, 0, 0)
+
+    def xtest0LevelsShouldSeeTheLosing2(self):
+        self.aiMaxmin('''     0123456789
+                             |
+                             |       ?
+                             |   $XXXX?
+                             |       X
+                             |       X
+                             |       ?
+                             |
+                        ''', white, white, 0, -WIN)
+
 
 
 if __name__ == "__main__":

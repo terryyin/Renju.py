@@ -3,10 +3,12 @@ from itertools import product
 from RenjuGame import black, white, empty
 
 MIN_RANK = 2  
-URGENT = 300
-WINNING = 600
-LOSS = 1000
-WIN = 2000
+TWO23 = 100
+THREAT = TWO23 * 2 - 10
+URGENT = THREAT * 2
+WINNING = URGENT * 2
+LOSS = 4000
+WIN = 10000
 stonePatterns = {
             '__|_*_': MIN_RANK, 
             '_*|___': MIN_RANK + 1, 
@@ -14,39 +16,82 @@ stonePatterns = {
             '_@|___': MIN_RANK + 3, 
             '__|@__': MIN_RANK + 4, 
             
-            '_|**__': MIN_RANK + 5, 
-            '_*|*__': MIN_RANK + 5, 
-            '_|@@__': MIN_RANK + 6, 
-            '_@|@__': MIN_RANK + 6, 
+            '_|_**_': TWO23, 
+            '_|**__': TWO23 + 1, 
+            '_*|*__': TWO23/2 + 1, 
+            '_|_@@_': TWO23 + 2, 
+            '_|@@__': TWO23 + 3, 
+            '_@|@__': TWO23/2 + 3, 
+
+            '_|***@': THREAT+1, 
+            '_|***W': THREAT+1, 
+            '|_***@': THREAT+1, 
+            '|_***W': THREAT+1, 
+            '_*|**@': THREAT+1, 
+            '_*|**W': THREAT+1, 
+            '*_|**@': THREAT+1, 
+            '*_|**W': THREAT+1, 
+            'W*|**_': THREAT+1, 
+            '@*|**_': THREAT+1, 
+            'W*|*_*': THREAT+1, 
+            '@*|*_*': THREAT+1, 
+            'W*|_**': THREAT+1, 
+            '@*|_**': THREAT+1, 
+
+            '_|@@@*': THREAT+10, 
+            '_|@@@W': THREAT+10, 
+            '|_@@@*': THREAT+10, 
+            '|_@@@W': THREAT+10, 
+            '_@|@@*': THREAT+10, 
+            '_@|@@W': THREAT+10, 
+            '@_|@@*': THREAT+10, 
+            '@_|@@W': THREAT+10, 
+            'W@|@@_': THREAT+10, 
+            '*@|@@_': THREAT+10, 
+            'W@|@_@': THREAT+10, 
+            '*@|@_@': THREAT+10, 
+            'W@|_@@': THREAT+10, 
+            '*@|_@@': THREAT+10, 
 
             '_|***_': URGENT, 
             '_*|**_': URGENT, 
             '_|@@@_': WINNING, 
             '_@|@@_': WINNING, 
-            '*|****': LOSS,
+            
             '_*|***': LOSS,
             '@*|***': LOSS,
+            'W*|***': LOSS,
             '*|***@': LOSS,
             '*|***_': LOSS,
+            '*|***W': LOSS,
+            '*|****': LOSS,
             '**|***': LOSS,
             '**|**@': LOSS,
             '**|**_': LOSS,
+            '**|**W': LOSS,
+            '*|****': LOSS,
             '@|****': LOSS,
             '_|****': LOSS,
-            '|****@': LOSS,
-            '|****_': LOSS,
+            'W|****': LOSS,
             '@|@@@@': WIN,
             '_@|@@@': WIN,
             '*@|@@@': WIN,
+            'W@|@@@': WIN,
             '@|@@@*': WIN,
             '@|@@@_': WIN,
+            '@|@@@W': WIN,
+            '@|@@@@': WIN,
             '@@|@@@': WIN,
             '@@|@@*': WIN,
             '@@|@@_': WIN,
+            '@@|@@@': WIN,
+            '@@|@@W': WIN,
             '*|@@@@': WIN,
             '_|@@@@': WIN,
+            'W|@@@@': WIN,
             '|@@@@*': WIN,
             '|@@@@_': WIN,
+            '|@@@@W': WIN,
             }
 
 class Move:
@@ -76,6 +121,8 @@ class AICross:
 
 origin = AICross()
 origin.stone_ = '|'
+border = AICross()
+border.stone_ = 'W'
         
 class AIBoard:
     dirs = ((-1, 0), (0, -1), (-1, -1), (1, -1), (1, 0), (0, 1), (1, 1), (-1, 1))
@@ -83,8 +130,12 @@ class AIBoard:
     def __init__(self, boardSize, patterns, blackPatterns):
         self.patterns = [patterns, blackPatterns]
         self.crosses = {}
-        for pos in product(range(boardSize), repeat=2):
-            self.crosses[pos] = AICross()
+        for pos in product(range(-1, boardSize+1), repeat=2):
+            if (boardSize>pos[0]>=0 and boardSize>pos[1]>=0):
+                self.crosses[pos] = AICross()
+            else:
+                self.crosses[pos] = border
+
         for pos, cross in self.crosses.items():
             for s in list(self.slices_(pos)):
                 for c in s:
@@ -145,27 +196,38 @@ class AIRenjuPlayer(object):
         return self.getMyMove_(level, self.who).getPosition()
     def getMyMove_(self, level, who):
         evaluateMove = lambda x:Move(x, self.aiBoard.crosses[x].rank_[who == black])
-        if level == 0:
-            alpha = max(map(evaluateMove, self._possibleMoves()))
-        else:
-            possibleMoves = sorted(map(evaluateMove, self._possibleMoves()), reverse = True)
-            alpha = possibleMoves[0]
-            alpha.rank_ = WIN * 10
-            for move in possibleMoves:
-                pos = move.pos
-                if self.aiBoard.crosses[pos].rank_[who == black] >= WINNING:
-                    alpha = Move(pos, self.aiBoard.crosses[pos].rank_[who == black])
-                    break
-                self.aiBoard.placeStone(pos, who)
-                beta = self.getMyMove_(level - 1, who.oppose)
-                if alpha.rank_ > beta.rank_:
-                    alpha.rank_ = beta.rank_
-                    alpha.pos = pos
-                self.aiBoard.placeStone(pos, '_')
-        if alpha.rank_ >= WINNING:
+        unsortedMoves = map(evaluateMove, self._possibleMoves())
+        alpha = max(unsortedMoves)
+        if LOSS > alpha.rank_ >= WINNING or alpha.rank_ >= WIN:
             alpha.rank_ = WIN
         else:
+            if alpha.rank_ >= LOSS:
+                lossingMoves = filter(lambda x:x.rank_ >=LOSS, unsortedMoves)
+                if len(lossingMoves) > 1:
+                    alpha.rank_ = -WIN
+                    return alpha
+                else:
+                    if len(filter(lambda x:x.rank_ >=WINNING, unsortedMoves)) > 1:
+                        alpha.rank_ = WIN
+                        return alpha
+            if URGENT+THREAT >alpha.rank_ >= URGENT:
+                if len(filter(lambda x:URGENT+THREAT>x.rank_ >=URGENT, unsortedMoves)) > 2:
+                    alpha.rank_ = -WIN
+                    return alpha
+            if alpha.rank_ >= LOSS:
+                unsortedMoves = lossingMoves
             alpha.rank_ = 0
+            if level > 0:
+                possibleMoves = sorted(unsortedMoves, reverse = True)[:10]
+                alpha.rank_ = -WIN * 10
+                for move in possibleMoves:
+                    pos = move.pos
+                    self.aiBoard.placeStone(pos, who)
+                    beta = self.getMyMove_(level - 1, who.oppose)
+                    if alpha.rank_ < - beta.rank_:
+                        alpha.rank_ = - beta.rank_
+                        alpha.pos = pos
+                    self.aiBoard.placeStone(pos, '_')
         return alpha
     
     def _possibleMoves(self):
