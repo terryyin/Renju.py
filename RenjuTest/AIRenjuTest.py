@@ -165,21 +165,7 @@ class TestAIPlayer(unittest.TestCase):
                              |       X
                              |       X
                              |       $
-                             |      XXX
                         ''')
-
-    def XtestTwo3IsTheSameAs3OpenOnBothEnd(self):
-        self.aiPattern('''    0123456789
-                             |
-                             |
-                             |   $OOO?
-                             |       O
-                             |       O
-                             |       O
-                             |       $
-                             |      OOO
-                        ''')
-
 
     def testTryToBlockOpposeOneStone1(self):
         self.aiPattern('''    ABCDEFGHIJKL
@@ -258,23 +244,13 @@ class TestAIPlayerMaxmin(unittest.TestCase):
         self.aiMaxmin('''     0123456789
                              |   OOO
                              |XXXX?
-                        ''', white, white, 0, WIN)
+                        ''', white, white, 0, 0)
 
     def test0LevelTooManyLosingPoints(self):
         self.aiMaxmin('''     0123456789
                              |?XXXX?
                         ''', white, white, 0, -WIN)
 
-    def test0LevelsShouldSeeTheLosing(self):
-        self.aiMaxmin('''     0123456789
-                             |
-                             |       ?
-                             |    ?XXX?
-                             |       X
-                             |       X
-                             |       ?
-                             |
-                        ''', white, white, 0, -WIN)
 
     def test0LevelsShouldPostponeTheLosing(self):
         self.aiMaxmin('''     0123456789
@@ -287,7 +263,7 @@ class TestAIPlayerMaxmin(unittest.TestCase):
                              |
                         ''', white, white, 0, 0)
 
-    def xtest0LevelsShouldSeeTheLosing2(self):
+    def test0LevelsShouldSeeTheLosing2(self):
         self.aiMaxmin('''     0123456789
                              |
                              |       ?
@@ -296,8 +272,92 @@ class TestAIPlayerMaxmin(unittest.TestCase):
                              |       X
                              |       ?
                              |
+                        ''', white, white, 1, -WIN)
+
+    def test0LevelsShouldSeeTheLosing(self):
+        self.aiMaxmin('''     0123456789
+                             |
+                             |       ?
+                             |    ?XXX?
+                             |       X
+                             |       X
+                             |       ?
+                             |
+                        ''', white, white, 1, -WIN)
+
+    def test1LevelsShouldSeeTwo3IsTheSameAs3OpenOnBothEnd(self):
+        self.aiMaxmin('''     0123456789
+                             |
+                             |       
+                             |   $OOO?
+                             |       O
+                             |       O
+                             |       O
+                             |       $
+                        ''', white, white, 1, WIN)
+
+    def testLosingWillExtendTheSearchLevel(self):
+        self.aiMaxmin('''     0123456789
+                             |     
+                             |
+                             |
+                             |      O
+                             |   O O
+                             |    XOO  
+                             |    OXXX?X
+                             |      X
+                             |     XXXO
+                             |    O X O 
+                             |      O
+                             |
                         ''', white, white, 0, -WIN)
 
+    def testThreatWillExtendTheThreating(self):
+        self.aiMaxmin('''     0123456789
+                             |     
+                             |
+                             |
+                             |      O
+                             |   O O
+                             |    XOO  
+                             |    OXXX??
+                             |      X
+                             |     XXXO
+                             |    O X O 
+                             |      O
+                             |
+                        ''', white, black, 0, WIN)
+
+    def testThreatWillExtendTheThreating1(self):
+        self.aiMaxmin('''     0123456789
+                             |     
+                             |
+                             |       
+                             |      O
+                             |   O O
+                             |    XOO  
+                             |    OXXX 
+                             |      X 
+                             |     XXXO
+                             |    ? X O 
+                             |      O
+                             |
+                        ''', white, white, 1, -WIN)
+    def testThreatWillExtendTheThreating2(self):
+        self.aiMaxmin('''     0123456789
+                             |     
+                             |
+                             |       
+                             |      O
+                             |   O O
+                             |    XOO  
+                             |    OXX? 
+                             |      X ?
+                             |     ?XX
+                             |      X O 
+                             |      O
+                             |
+                        ''', white, black, 4, WIN)
 
 
 if __name__ == "__main__":

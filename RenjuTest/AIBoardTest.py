@@ -2,7 +2,7 @@ import unittest
 from Renju.AIRenjuPlayer import AIBoard, stonePatterns, blackCopyOfPattern
 from StoneBuilder import parseStonePatternString
 
-Urgent = 382
+Urgent = 380
 class AIBoardTest(unittest.TestCase):
 
     def boardWithStones(self, stoneString):

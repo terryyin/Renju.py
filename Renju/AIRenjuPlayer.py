@@ -5,7 +5,8 @@ from RenjuGame import black, white, empty
 MIN_RANK = 2  
 TWO23 = 100
 THREAT = TWO23 * 2 - 10
-URGENT = THREAT * 2
+WINNING_THREAT = THREAT + 30
+URGENT = THREAT * 2 - 2
 WINNING = URGENT * 2
 LOSS = 4000
 WIN = 10000
@@ -23,35 +24,35 @@ stonePatterns = {
             '_|@@__': TWO23 + 3, 
             '_@|@__': TWO23/2 + 3, 
 
-            '_|***@': THREAT+1, 
-            '_|***W': THREAT+1, 
-            '|_***@': THREAT+1, 
-            '|_***W': THREAT+1, 
-            '_*|**@': THREAT+1, 
-            '_*|**W': THREAT+1, 
-            '*_|**@': THREAT+1, 
-            '*_|**W': THREAT+1, 
-            'W*|**_': THREAT+1, 
-            '@*|**_': THREAT+1, 
-            'W*|*_*': THREAT+1, 
-            '@*|*_*': THREAT+1, 
-            'W*|_**': THREAT+1, 
-            '@*|_**': THREAT+1, 
+            '_|***@': THREAT, 
+            '_|***W': THREAT, 
+            '|_***@': THREAT, 
+            '|_***W': THREAT, 
+            '_*|**@': THREAT, 
+            '_*|**W': THREAT, 
+            '*_|**@': THREAT, 
+            '*_|**W': THREAT, 
+            'W*|**_': THREAT, 
+            '@*|**_': THREAT, 
+            'W*|*_*': THREAT, 
+            '@*|*_*': THREAT, 
+            'W*|_**': THREAT, 
+            '@*|_**': THREAT, 
 
-            '_|@@@*': THREAT+10, 
-            '_|@@@W': THREAT+10, 
-            '|_@@@*': THREAT+10, 
-            '|_@@@W': THREAT+10, 
-            '_@|@@*': THREAT+10, 
-            '_@|@@W': THREAT+10, 
-            '@_|@@*': THREAT+10, 
-            '@_|@@W': THREAT+10, 
-            'W@|@@_': THREAT+10, 
-            '*@|@@_': THREAT+10, 
-            'W@|@_@': THREAT+10, 
-            '*@|@_@': THREAT+10, 
-            'W@|_@@': THREAT+10, 
-            '*@|_@@': THREAT+10, 
+            '_|@@@*': WINNING_THREAT, 
+            '_|@@@W': WINNING_THREAT, 
+            '|_@@@*': WINNING_THREAT, 
+            '|_@@@W': WINNING_THREAT, 
+            '_@|@@*': WINNING_THREAT, 
+            '_@|@@W': WINNING_THREAT, 
+            '@_|@@*': WINNING_THREAT, 
+            '@_|@@W': WINNING_THREAT, 
+            'W@|@@_': WINNING_THREAT, 
+            '*@|@@_': WINNING_THREAT, 
+            'W@|@_@': WINNING_THREAT, 
+            '*@|@_@': WINNING_THREAT, 
+            'W@|_@@': WINNING_THREAT, 
+            '*@|_@@': WINNING_THREAT, 
 
             '_|***_': URGENT, 
             '_*|**_': URGENT, 
@@ -107,9 +108,9 @@ class Move:
 
 toAI = {black:'*', white:'@', empty:'_', '_':'_', 'wall':'W', '|':'|'}
 class AICross:
-    def __init__(self):
+    def __init__(self, rank = 0):
         self.stone_ = '_'
-        self.rank_ = [0, 0]
+        self.rank_ = [rank, rank]
         self.ripples_ = []
         
     def getRippleSlices(self):
@@ -179,6 +180,7 @@ def blackCopyOfPattern(pattern):
         op[key.replace('*', '#').replace('@', '*').replace('#', '@')] = v
     return op
 
+from copy import deepcopy
 class AIRenjuPlayer(object):
     
     def __init__(self, who, board, patternsForWhite = stonePatterns):
@@ -194,40 +196,46 @@ class AIRenjuPlayer(object):
         
     def getMyMove(self, level = 0):
         return self.getMyMove_(level, self.who).getPosition()
-    def getMyMove_(self, level, who):
+    def getMyMove_(self, level, who, a = - WIN * 10, b = WIN * 10, color = 1):
+        minRank = -WIN * 10
         evaluateMove = lambda x:Move(x, self.aiBoard.crosses[x].rank_[who == black])
         unsortedMoves = map(evaluateMove, self._possibleMoves())
-        alpha = max(unsortedMoves)
+        alpha = deepcopy(max(unsortedMoves))
         if LOSS > alpha.rank_ >= WINNING or alpha.rank_ >= WIN:
             alpha.rank_ = WIN
+            return alpha
         else:
             if alpha.rank_ >= LOSS:
                 lossingMoves = filter(lambda x:x.rank_ >=LOSS, unsortedMoves)
                 if len(lossingMoves) > 1:
                     alpha.rank_ = -WIN
                     return alpha
-                else:
-                    if len(filter(lambda x:x.rank_ >=WINNING, unsortedMoves)) > 1:
-                        alpha.rank_ = WIN
-                        return alpha
-            if URGENT+THREAT >alpha.rank_ >= URGENT:
-                if len(filter(lambda x:URGENT+THREAT>x.rank_ >=URGENT, unsortedMoves)) > 2:
-                    alpha.rank_ = -WIN
-                    return alpha
-            if alpha.rank_ >= LOSS:
                 unsortedMoves = lossingMoves
-            alpha.rank_ = 0
+                level+=1
+            elif level == 0 and alpha.rank_ >= WINNING_THREAT:
+                level+=0.5
+                
             if level > 0:
-                possibleMoves = sorted(unsortedMoves, reverse = True)[:10]
-                alpha.rank_ = -WIN * 10
+                possibleMoves = sorted(unsortedMoves, reverse = True)[:30]
+                alpha.rank_ = minRank
                 for move in possibleMoves:
                     pos = move.pos
                     self.aiBoard.placeStone(pos, who)
-                    beta = self.getMyMove_(level - 1, who.oppose)
+                    beta = self.getMyMove_(level - 1, who.oppose, 0, -alpha.rank_, -color)
+                    if -beta.rank_ >= b:
+                        alpha.pos = pos
+                        alpha.rank_ = b
+                        self.aiBoard.placeStone(pos, '_')
+                        return alpha
                     if alpha.rank_ < - beta.rank_:
                         alpha.rank_ = - beta.rank_
                         alpha.pos = pos
+                        if alpha.rank_ >= WIN:
+                            self.aiBoard.placeStone(pos, '_')
+                            break
                     self.aiBoard.placeStone(pos, '_')
+        if -WIN<alpha.rank_<WIN:
+            alpha.rank_ = 0
         return alpha
     
     def _possibleMoves(self):
