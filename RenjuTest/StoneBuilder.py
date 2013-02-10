@@ -1,4 +1,4 @@
-from Renju import black, white
+from Renju import *
 class StoneBuilder:
     dirs = ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1))
     def __init__(self):
@@ -108,3 +108,11 @@ def parseStonePatternString(patternString):
 
 def stop(patternString):
     return OneRowPattern(patternString).getOnePosition()
+
+def aiMaxmin(stonesPattern, who, asWho, level):
+    player = AIRenjuPlayer(who, RenjuBoard())
+    stones, expects = parseStonePatternString(stonesPattern)
+    player.placeStones(stones)
+    return player.negamax_(level, asWho), expects
+
+

@@ -1,7 +1,7 @@
 import unittest
 from Renju import *
 from Renju.AIRenjuPlayer import WIN
-from StoneBuilder import StoneBuilder, stop, parseStonePatternString
+from StoneBuilder import StoneBuilder, stop, parseStonePatternString, aiMaxmin
 
 '''
 "B8\\__XO_$" means:
@@ -13,7 +13,6 @@ from StoneBuilder import StoneBuilder, stop, parseStonePatternString
     O: white stone
     $: wall. It's not a stone but something else prevent AI to match a pattern.
 '''
-
 class TestAIPlayerPattern(unittest.TestCase):
     def setUp(self):
         self.FourInARowPattern = {
@@ -45,19 +44,6 @@ class TestAIPlayerPattern(unittest.TestCase):
         player.placeStones(parseStonePatternString('G0|_XXX_')[0])
         move = player.getMyMove()
         self.assertEqual(move, stop('C0|____O'))
-
-def putStones():
-    player = AIRenjuPlayer(white,  RenjuBoard())
-    for i in range(1000):
-        player.placeStone((7,7), black)
-        
-class TestAIPlayerPerformance(unittest.TestCase):
-    def XtestPerformance(self):
-        import cProfile
-        import sys
-        profiler = cProfile.Profile()
-        profiler.runcall(putStones)
-        profiler.print_stats(1)
 
 class TestAIPlayer(unittest.TestCase):
 
@@ -222,12 +208,9 @@ class TestAIPlayer(unittest.TestCase):
 
 class TestAIPlayerMaxmin(unittest.TestCase):
     def aiMaxmin(self, stonesPattern, who, asWho, level, expectedRank):
-        player = AIRenjuPlayer(who, RenjuBoard())
-        stones, expects = parseStonePatternString(stonesPattern)
-        player.placeStones(stones)
-        move = player.getMyMove_(level, asWho)
-        self.assertIn(move.pos, expects)
-        self.assertEqual(expectedRank, move.rank_)
+        (rank, move), expects = aiMaxmin(stonesPattern, who, asWho, level)
+        self.assertIn(move, expects)
+        self.assertEqual(expectedRank, rank)
         
     def test0LevelsShouldSeeTheDirectWinning(self):
         self.aiMaxmin('''     0123456789
@@ -285,7 +268,7 @@ class TestAIPlayerMaxmin(unittest.TestCase):
                              |
                         ''', white, white, 1, -WIN)
 
-    def test1LevelsShouldSeeTwo3IsTheSameAs3OpenOnBothEnd(self):
+    def test0LevelsShouldSeeTwo3IsTheSameAs3OpenOnBothEnd(self):
         self.aiMaxmin('''     0123456789
                              |
                              |       
@@ -294,7 +277,18 @@ class TestAIPlayerMaxmin(unittest.TestCase):
                              |       O
                              |       O
                              |       $
-                        ''', white, white, 1, WIN)
+                        ''', white, white, 0, WIN)
+
+    def testMinusLevelsShouldSeeTwo3IsTheSameAs3OpenOnBothEnd(self):
+        self.aiMaxmin('''     0123456789
+                             |
+                             |       
+                             |   $OOO?
+                             |       O
+                             |       O
+                             |       O
+                             |       $
+                        ''', white, white, -.5, WIN)
 
     def testLosingWillExtendTheSearchLevel(self):
         self.aiMaxmin('''     0123456789
@@ -343,6 +337,7 @@ class TestAIPlayerMaxmin(unittest.TestCase):
                              |      O
                              |
                         ''', white, white, 1, -WIN)
+        
     def testThreatWillExtendTheThreating2(self):
         self.aiMaxmin('''     0123456789
                              |     
